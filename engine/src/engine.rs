@@ -1,5 +1,6 @@
 use crate::{
     board::{Board, HEIGHT, WIDTH, column_mask},
+    move_sorter::MoveSorter,
     transposition_table::TranspositionTable,
 };
 use std::cmp::max;
@@ -66,15 +67,21 @@ impl Engine {
             }
         }
 
-        for ind in 0..WIDTH {
+        let mut moves = MoveSorter::new();
+        for ind in (0..WIDTH).rev() {
             let colm = self.column_order[ind];
-            if next & column_mask(colm) != 0 {
-                let mut board = board.clone();
-                board.play(colm);
-                alpha = max(alpha, -self.negamax(board, -beta, -alpha));
-                if alpha >= beta {
-                    return alpha;
-                }
+            let mov = next & column_mask(colm);
+            if mov != 0 {
+                moves.add(mov, board.score(mov));
+            }
+        }
+
+        for mov in moves {
+            let mut board = board.clone();
+            board.play_move(mov);
+            alpha = max(alpha, -self.negamax(board, -beta, -alpha));
+            if alpha >= beta {
+                return alpha;
             }
         }
         self.table.put(board.key(), (alpha - MIN_SCORE + 1) as u8);
