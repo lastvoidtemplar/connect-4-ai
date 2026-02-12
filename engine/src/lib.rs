@@ -1,5 +1,6 @@
 mod board;
 pub mod engine;
+mod transposition_table;
 
 use paste::paste;
 
