@@ -72,7 +72,25 @@ impl Engine {
     }
 
     pub fn score(&mut self, board: Board) -> i32 {
-        self.negamax(board, MIN_SCORE, MAX_SCORE)
+        let mut left = -((WIDTH * HEIGHT - board.played_moves()) as i32) / 2;
+        let mut right = (WIDTH * HEIGHT - board.played_moves() + 1) as i32 / 2;
+
+        while left < right {
+            let mut median = left + (right - left) / 2;
+            if median <= 0 && left / 2 < median {
+                median = left / 2;
+            } else if median >= 0 && median < right / 2 {
+                median = right / 2;
+            }
+            let score = self.negamax(board, median, median + 1);
+            if score <= median {
+                right = score;
+            } else {
+                left = score;
+            }
+        }
+
+        left
     }
 
     pub fn solve(&mut self, board: Board) -> [Option<i32>; WIDTH] {
@@ -89,5 +107,10 @@ impl Engine {
 
     pub fn explored_nodes(&self) -> usize {
         self.explored_nodes
+    }
+
+    pub fn reset(&mut self) {
+        self.explored_nodes = 0;
+        self.table = TranspositionTable::new(TRANSPOSITION_TABLE_SIZE);
     }
 }

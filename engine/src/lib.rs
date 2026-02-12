@@ -148,3 +148,15 @@ generate_eval_tests! {
     "25545" => 18,
     "716763353724" => 13
 }
+
+#[test]
+fn test() {
+    let mut engine = crate::engine::Engine::new();
+    let board = "46212622667241121631756".parse().unwrap();
+    let score = engine.score(board);
+
+    assert_eq!(
+        score,
+        11
+    );
+}
