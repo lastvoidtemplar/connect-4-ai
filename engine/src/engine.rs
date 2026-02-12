@@ -4,11 +4,23 @@ use std::cmp::max;
 const MIN_SCORE: i32 = -(WIDTH as i32 * HEIGHT as i32) / 2 + 3;
 const MAX_SCORE: i32 = (WIDTH as i32 * HEIGHT as i32 + 1) / 2 - 3;
 
-pub struct Engine;
+pub struct Engine{
+    column_order: [usize; WIDTH]
+}
 
 impl Engine {
     pub fn new() -> Self {
-        Self
+        let mut column_order = [0; WIDTH];
+
+        // [3, 2, 4, 1, 5, 0, 6]
+        for ind in 0..(WIDTH as i32) {
+            let colm = WIDTH as i32 / 2 + (1 - 2 * (ind & 1)) * (ind + 1) / 2;
+            column_order[ind as usize] = colm as usize;
+        }
+
+        Self {
+            column_order,
+        }
     }
 
     fn negamax(&mut self, board: Board, mut alpha: i32, mut beta: i32) -> i32 {
@@ -30,7 +42,8 @@ impl Engine {
             }
         }
 
-        for colm in 0..WIDTH {
+        for ind in 0..WIDTH {
+            let colm = self.column_order[ind];
             if board.can_play(colm) {
                 let mut board = board.clone();
                 board.play(colm);
