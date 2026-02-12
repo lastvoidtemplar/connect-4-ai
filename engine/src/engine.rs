@@ -1,5 +1,5 @@
 use crate::{
-    board::{Board, HEIGHT, WIDTH},
+    board::{Board, HEIGHT, WIDTH, column_mask},
     transposition_table::TranspositionTable,
 };
 use std::cmp::max;
@@ -35,13 +35,23 @@ impl Engine {
 
     fn negamax(&mut self, board: Board, mut alpha: i32, mut beta: i32) -> i32 {
         self.explored_nodes += 1;
-        if board.played_moves() == WIDTH * HEIGHT {
+
+        let next = board.possible_non_losing_moves();
+        if next == 0 {
+            return -(((WIDTH * HEIGHT - board.played_moves()) / 2) as i32);
+        }
+
+        if board.played_moves() >= WIDTH * HEIGHT - 2 {
+            // draw
             return 0;
         }
 
-        for colm in 0..WIDTH {
-            if board.can_play(colm) && board.is_winning(colm) {
-                return (WIDTH * HEIGHT - board.played_moves() + 1) as i32 / 2;
+        // opponent cannot win with his next move
+        let lower_bound = -(((WIDTH * HEIGHT - board.played_moves() - 2) / 2) as i32);
+        if alpha < lower_bound {
+            alpha = lower_bound;
+            if alpha >= beta {
+                return alpha;
             }
         }
 
@@ -58,7 +68,7 @@ impl Engine {
 
         for ind in 0..WIDTH {
             let colm = self.column_order[ind];
-            if board.can_play(colm) {
+            if next & column_mask(colm) != 0 {
                 let mut board = board.clone();
                 board.play(colm);
                 alpha = max(alpha, -self.negamax(board, -beta, -alpha));
@@ -72,6 +82,10 @@ impl Engine {
     }
 
     pub fn score(&mut self, board: Board) -> i32 {
+        if board.can_win_next() {
+            return (WIDTH * HEIGHT - board.played_moves() + 1) as i32 / 2;
+        }
+
         let mut left = -((WIDTH * HEIGHT - board.played_moves()) as i32) / 2;
         let mut right = (WIDTH * HEIGHT - board.played_moves() + 1) as i32 / 2;
 

@@ -150,13 +150,13 @@ generate_eval_tests! {
 }
 
 #[test]
-fn test() {
+fn test_empty_board() {
     let mut engine = crate::engine::Engine::new();
-    let board = "46212622667241121631756".parse().unwrap();
+    let board = "".parse().unwrap();
     let score = engine.score(board);
 
     assert_eq!(
         score,
-        11
+        -19
     );
 }
