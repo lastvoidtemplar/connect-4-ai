@@ -3,76 +3,95 @@ use std::{error::Error, fmt::Display, str::FromStr};
 pub const WIDTH: usize = 7;
 pub const HEIGHT: usize = 6;
 
-#[derive(Clone)]
+
+/*
+    the board is encoded in this direction
+    6 13 ...
+    5 12 ...
+    4 11 ...
+    3 10 ...
+    2  9 ...
+    1  8 ...
+    0  7 ...
+col 0  1  2
+*/
+
+/*
+    mask is a bitboard with 1 where there is a non-empty cell
+    current is a bitboard where the cells of the current player are marked as 1
+*/
+#[derive(Clone, Copy)]
 pub struct Board {
-    board: [[i32; HEIGHT]; WIDTH],
-    columns_heights: [usize; WIDTH],
+    current: u64,
+    mask: u64,
     played_moves: usize,
 }
 
 impl Board {
     pub fn new() -> Self {
         Self {
-            board: [[0; HEIGHT]; WIDTH],
-            columns_heights: [0; WIDTH],
+            current: 0,
+            mask: 0,
             played_moves: 0,
         }
     }
 
-    fn current_player(&self) -> i32 {
-        (1 + (self.played_moves & 1)) as i32
-    }
-
     pub fn can_play(&self, colm: usize) -> bool {
-        self.columns_heights[colm] < HEIGHT
+        (self.mask & top_mask(colm)) == 0
     }
 
     pub fn play(&mut self, colm: usize) {
-        self.board[colm][self.columns_heights[colm]] += self.current_player();
-        self.columns_heights[colm] += 1;
+        self.current = self.mask ^ self.current;
+        self.mask = self.mask | (self.mask + bottom_mask(colm));
         self.played_moves += 1;
     }
 
     pub fn is_winning(&self, colm: usize) -> bool {
-        let current_player = self.current_player();
+        // filling top of the colm
+        let position = self.current | ((self.mask + bottom_mask(colm)) & column_mask(colm));
 
-        let column_height = self.columns_heights[colm];
-        let board_column = self.board[colm];
-        if column_height >= 3
-            && board_column[column_height - 1] == current_player
-            && board_column[column_height - 2] == current_player
-            && board_column[column_height - 3] == current_player
-        {
-            return true;
-        }
+        let vertical_shift = 1;
+        let vertical_pair = position & (position >> vertical_shift);
+        let vertical_line = vertical_pair & (vertical_pair >> (2 * vertical_shift));
 
-        // -1 - / diagonal, 0 - _ horizotal, 1 - \
-        for direction_y in -1..=1 {
-            let mut encounter_cells_current_player = 0;
-            for direction_x in (-1..=1).step_by(2) {
-                let mut x = colm as i32 + direction_x;
-                let mut y = column_height as i32 + direction_y * direction_x;
-                while x >= 0
-                    && x < WIDTH as i32
-                    && y >= 0
-                    && y < HEIGHT as i32
-                    && self.board[x as usize][y as usize] == current_player
-                {
-                    encounter_cells_current_player += 1;
-                    x += direction_x;
-                    y += direction_y * direction_x
-                }
-            }
-            if encounter_cells_current_player >= 3 {
-                return true;
-            }
-        }
-        return false;
+        let horizontal_shift = HEIGHT + 1;
+        let horizontal_pair = position & (position >> horizontal_shift);
+        let horizontal_line = horizontal_pair & (horizontal_pair >> (2 * horizontal_shift));
+
+        let main_diagonal_shift = HEIGHT;
+        let main_diagonal_pair = position & (position >> main_diagonal_shift);
+        let main_diagonal_line =
+            main_diagonal_pair & (main_diagonal_pair >> (2 * main_diagonal_shift));
+
+        let off_diagonal_shift = HEIGHT + 2;
+        let off_diagonal_pair = position & (position >> off_diagonal_shift);
+        let off_diagonal_line = off_diagonal_pair & (off_diagonal_pair >> (2 * off_diagonal_shift));
+
+        return vertical_line != 0
+            || horizontal_line != 0
+            || main_diagonal_line != 0
+            || off_diagonal_line != 0;
     }
 
     pub fn played_moves(&self) -> usize {
         self.played_moves
     }
+
+    pub fn key(&self) -> u64 {
+        self.current + self.mask
+    }
+}
+
+fn top_mask(colm: usize) -> u64 {
+    (1u64 << (HEIGHT - 1)) << colm * (HEIGHT + 1)
+}
+
+fn bottom_mask(colm: usize) -> u64 {
+    1u64 << colm * (HEIGHT + 1)
+}
+
+fn column_mask(colm: usize) -> u64 {
+    ((1u64 << HEIGHT) - 1) << colm * (HEIGHT + 1)
 }
 
 impl FromStr for Board {
