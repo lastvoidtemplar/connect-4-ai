@@ -1,4 +1,4 @@
-mod board;
+pub mod board;
 pub mod engine;
 mod transposition_table;
 mod move_sorter;
