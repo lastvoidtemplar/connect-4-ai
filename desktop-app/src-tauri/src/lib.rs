@@ -28,7 +28,13 @@ impl Game {
 type AppState<'a> = State<'a, Arc<Mutex<Game>>>;
 
 #[tauri::command]
-fn open_opening_book(book_path: String, state: AppState) -> Result<(), String> {
+fn get_encoded_board(state: AppState) -> String {
+    let game = state.lock().unwrap();
+    game.encoded_board.clone()
+}
+
+#[tauri::command]
+fn open_book(book_path: String, state: AppState) -> Result<(), String> {
     let mut game = state.lock().unwrap();
     let book = OpeningBook::open(&book_path).map_err(|err| err.to_string())?;
     game.engine = Engine::with_book(book);
@@ -59,13 +65,6 @@ fn reset_game(state: AppState) {
 }
 
 #[tauri::command]
-fn board_score(state: AppState) -> i32 {
-    let mut game = state.lock().unwrap();
-    let board = game.encoded_board.parse().unwrap();
-    game.engine.score(board)
-}
-
-#[tauri::command]
 fn columns_score(state: AppState) -> [Option<i32>; WIDTH] {
     let mut game = state.lock().unwrap();
     let board = game.encoded_board.parse().unwrap();
@@ -75,13 +74,14 @@ fn columns_score(state: AppState) -> [Option<i32>; WIDTH] {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(Arc::new(Mutex::new(Game::new())))
         .invoke_handler(tauri::generate_handler![
-            open_opening_book,
+            get_encoded_board,
+            open_book,
             play_colm,
             reset_game,
-            board_score,
             columns_score
         ])
         .run(tauri::generate_context!())

@@ -1,5 +1,8 @@
 use crate::{
-    board::{Board, HEIGHT, WIDTH, column_mask}, move_sorter::MoveSorter, opening_book::OpeningBook, transposition_table::TranspositionTable
+    board::{Board, HEIGHT, WIDTH, column_mask},
+    move_sorter::MoveSorter,
+    opening_book::OpeningBook,
+    transposition_table::TranspositionTable,
 };
 use std::cmp::max;
 
@@ -129,9 +132,13 @@ impl Engine {
         let mut result = [None; WIDTH];
         for (colm, colm_result) in result.iter_mut().enumerate() {
             if board.can_play(colm) {
-                let mut board = board.clone();
-                board.play(colm);
-                *colm_result = Some(self.score(board))
+                if board.is_winning(colm) {
+                   *colm_result = Some((WIDTH * HEIGHT - board.played_moves() + 1) as i32 / 2);
+                } else {
+                    let mut board = board.clone();
+                    board.play(colm);
+                    *colm_result = Some(-self.score(board))
+                }
             }
         }
         result
