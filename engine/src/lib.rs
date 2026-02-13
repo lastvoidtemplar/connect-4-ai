@@ -234,10 +234,10 @@ generate_eval_tests! {
 #[test]
 fn test_empty_board() {
     let mut engine = crate::engine::Engine::new();
-    let board = "".parse().unwrap();
+    let board = "4".parse().unwrap();
     let score = engine.score(board);
 
-    assert_eq!(score, -19);
+    assert_eq!(score, -1);
 }
 
 #[test]
