@@ -3,12 +3,14 @@ use std::{collections::HashMap, thread};
 use engine::{
     board::{Board, ParsingBoardErr},
     engine::Engine,
+    opening_book::OpeningBook,
 };
 
 const SCORE_SHIFT: u8 = 127;
-const BOOK_PATH: &'static str = "opening-book-6";
+const BOOK_PATH: &'static str = "opening-book-8";
 
 fn generate_subtree(
+    book: &OpeningBook,
     engine: &mut Engine,
     encoded_board: &mut String,
     depth: usize,
@@ -22,7 +24,7 @@ fn generate_subtree(
             return;
         }
 
-        let score = engine.score(board);
+        let score = book.score(&board).or_else(|| Some(engine.score(board))).unwrap();
         map.insert(key, score);
 
         if depth == 0 {
@@ -31,39 +33,47 @@ fn generate_subtree(
 
         for col in 1..=7 {
             encoded_board.push(char::from_digit(col as u32, 10).unwrap());
-            generate_subtree(engine, encoded_board, depth - 1, map);
+            generate_subtree(book, engine, encoded_board, depth - 1, map);
             encoded_board.pop();
         }
     }
 }
 
-fn generate_book_parallel(depth: usize) -> HashMap<u64, i32> {
-    let mut handlers = Vec::new();
+fn generate_book_parallel(depth: usize, book_depth_6: &OpeningBook) -> HashMap<u64, i32> {
+    thread::scope(|s| {
+        let mut handlers = Vec::new();
 
-    for col in 1..=7 {
-        let handle = thread::spawn(move || {
-            let mut engine = Engine::new();
-            let mut map = HashMap::new();
-            let mut encoded_board = col.to_string();
+        for col in 1..=7 {
+            let handle = s.spawn(move || {
+                let mut engine = Engine::new();
+                let mut map = HashMap::new();
+                let mut encoded_board = col.to_string();
 
-            generate_subtree(&mut engine, &mut encoded_board, depth - 1, &mut map);
+                generate_subtree(
+                    book_depth_6,
+                    &mut engine,
+                    &mut encoded_board,
+                    depth - 1,
+                    &mut map,
+                );
 
-            map
-        });
+                map
+            });
 
-        handlers.push(handle);
-    }
-
-    let mut book = HashMap::new();
-
-    for handler in handlers {
-        let map = handler.join().unwrap();
-        for (k, v) in map {
-            book.entry(k).or_insert(v);
+            handlers.push(handle);
         }
-    }
 
-    book
+        let mut book = HashMap::new();
+
+        for handler in handlers {
+            let map = handler.join().unwrap();
+            for (k, v) in map {
+                book.entry(k).or_insert(v);
+            }
+        }
+
+        book
+    })
 }
 
 pub fn save_book(book: &HashMap<u64, i32>, book_path: &str) {
@@ -85,6 +95,7 @@ pub fn save_book(book: &HashMap<u64, i32>, book_path: &str) {
 }
 
 fn main() {
-    let book = generate_book_parallel(6);
+    let book_depth_6 = OpeningBook::load("./opening-book-6").unwrap();
+    let book = generate_book_parallel(8, &book_depth_6);
     save_book(&book, BOOK_PATH);
 }
