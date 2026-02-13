@@ -44,7 +44,7 @@ function Game() {
 
   const board = buildBoard(encodedBoard);
 
-    async function playColm(colm: number) {
+  async function playColm(colm: number) {
     try {
       await invoke("play_colm", { colm });
       await refresh();
@@ -53,11 +53,15 @@ function Game() {
     }
   }
 
+  async function backMove() {
+    await invoke("back_move");
+    await refresh();
+  }
+
   async function resetGame() {
     await invoke("reset_game");
     await refresh();
   }
-  
 
   return (
     <div className="flex flex-col items-center min-h-screen bg-gray-900 text-white py-20">
@@ -69,10 +73,14 @@ function Game() {
               className="w-24 h-24 bg-white rounded-full flex items-center justify-center cursor-pointer hover:scale-105 transition"
               onClick={() => playColm(c + 1)}
             >
-              {cell === 1 && <div className="w-20 h-20 bg-red-500 rounded-full" />}
-              {cell === 2 && <div className="w-20 h-20 bg-yellow-400 rounded-full" />}
+              {cell === 1 && (
+                <div className="w-20 h-20 bg-red-500 rounded-full" />
+              )}
+              {cell === 2 && (
+                <div className="w-20 h-20 bg-yellow-400 rounded-full" />
+              )}
             </div>
-          ))
+          )),
         )}
       </div>
 
@@ -84,14 +92,22 @@ function Game() {
         ))}
       </div>
 
-      <button
-        onClick={resetGame}
-        className="mt-8 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
-      >
-        Reset
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={backMove}
+          className="mt-8 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
+        >
+          Back
+        </button>
+        <button
+          onClick={resetGame}
+          className="mt-8 px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition"
+        >
+          Reset
+        </button>
+      </div>
     </div>
-  ); 
+  );
 }
 
 export default Game;
