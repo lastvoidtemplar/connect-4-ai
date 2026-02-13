@@ -8,12 +8,19 @@ use crate::board::Board;
 
 const SCORE_SHIFT: u8 = 127;
 
+#[derive(Clone)]
 pub struct OpeningBook {
     book: HashMap<u64, i32>,
 }
 
 impl OpeningBook {
-    pub fn load(book_path: &str) -> Result<Self, Error> {
+    pub fn new() -> Self {
+        Self {
+            book: HashMap::new(),
+        }
+    }
+
+    pub fn open(book_path: &str) -> Result<Self, Error> {
         let file = File::open(book_path)?;
         let mut reader = BufReader::new(file);
 

@@ -242,7 +242,7 @@ fn test_empty_board() {
 
 #[test]
 fn test_opening_book() {
-    let book = crate::opening_book::OpeningBook::load("../opening-book-8").unwrap();
+    let book = crate::opening_book::OpeningBook::open("../opening-book-8").unwrap();
     let board = "12344321".parse().unwrap();
     let score = book.score(&board);
     assert_eq!(score, Some(6));

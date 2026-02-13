@@ -1,19 +1,19 @@
 use crate::{
-    board::{Board, HEIGHT, WIDTH, column_mask},
-    move_sorter::MoveSorter,
-    transposition_table::TranspositionTable,
+    board::{Board, HEIGHT, WIDTH, column_mask}, move_sorter::MoveSorter, opening_book::OpeningBook, transposition_table::TranspositionTable
 };
 use std::cmp::max;
 
 const MIN_SCORE: i32 = -(WIDTH as i32 * HEIGHT as i32) / 2 + 3;
-const MAX_SCORE: i32 = (WIDTH as i32 * HEIGHT as i32 + 1) / 2 - 3;
+// const MAX_SCORE: i32 = (WIDTH as i32 * HEIGHT as i32 + 1) / 2 - 3;
 
 // nearest prime to 8 * 1024 * 1024
 const TRANSPOSITION_TABLE_SIZE: usize = 8388593;
 
+#[derive(Clone)]
 pub struct Engine {
     column_order: [usize; WIDTH],
     table: TranspositionTable,
+    book: OpeningBook,
     explored_nodes: usize,
 }
 
@@ -30,8 +30,15 @@ impl Engine {
         Self {
             column_order,
             table: TranspositionTable::new(TRANSPOSITION_TABLE_SIZE),
+            book: OpeningBook::new(),
             explored_nodes: 0,
         }
+    }
+
+    pub fn with_book(book: OpeningBook) -> Self {
+        let mut engine = Self::new();
+        engine.book = book;
+        engine
     }
 
     fn negamax(&mut self, board: Board, mut alpha: i32, mut beta: i32) -> i32 {
@@ -89,6 +96,10 @@ impl Engine {
     }
 
     pub fn score(&mut self, board: Board) -> i32 {
+        if let Some(score) = self.book.score(&board) {
+            return score;
+        }
+
         if board.can_win_next() {
             return (WIDTH * HEIGHT - board.played_moves() + 1) as i32 / 2;
         }
@@ -120,7 +131,7 @@ impl Engine {
             if board.can_play(colm) {
                 let mut board = board.clone();
                 board.play(colm);
-                *colm_result = Some(-self.negamax(board, MIN_SCORE, MAX_SCORE));
+                *colm_result = Some(self.score(board))
             }
         }
         result

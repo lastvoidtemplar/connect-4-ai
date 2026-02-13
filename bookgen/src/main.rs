@@ -7,10 +7,9 @@ use engine::{
 };
 
 const SCORE_SHIFT: u8 = 127;
-const BOOK_PATH: &'static str = "opening-book-8";
+const BOOK_PATH: &'static str = "opening-book-test";
 
 fn generate_subtree(
-    book: &OpeningBook,
     engine: &mut Engine,
     encoded_board: &mut String,
     depth: usize,
@@ -24,7 +23,7 @@ fn generate_subtree(
             return;
         }
 
-        let score = book.score(&board).or_else(|| Some(engine.score(board))).unwrap();
+        let score = engine.score(board);
         map.insert(key, score);
 
         if depth == 0 {
@@ -33,24 +32,23 @@ fn generate_subtree(
 
         for col in 1..=7 {
             encoded_board.push(char::from_digit(col as u32, 10).unwrap());
-            generate_subtree(book, engine, encoded_board, depth - 1, map);
+            generate_subtree(engine, encoded_board, depth - 1, map);
             encoded_board.pop();
         }
     }
 }
 
-fn generate_book_parallel(depth: usize, book_depth_6: &OpeningBook) -> HashMap<u64, i32> {
+fn generate_book_parallel(depth: usize, engine: Engine) -> HashMap<u64, i32> {
     thread::scope(|s| {
         let mut handlers = Vec::new();
 
         for col in 1..=7 {
+            let mut engine = engine.clone();
             let handle = s.spawn(move || {
-                let mut engine = Engine::new();
                 let mut map = HashMap::new();
                 let mut encoded_board = col.to_string();
 
                 generate_subtree(
-                    book_depth_6,
                     &mut engine,
                     &mut encoded_board,
                     depth - 1,
@@ -95,7 +93,7 @@ pub fn save_book(book: &HashMap<u64, i32>, book_path: &str) {
 }
 
 fn main() {
-    let book_depth_6 = OpeningBook::load("./opening-book-6").unwrap();
-    let book = generate_book_parallel(8, &book_depth_6);
+    let engine = Engine::with_book(OpeningBook::open("./opening-book-8").unwrap());
+    let book = generate_book_parallel(8, engine);
     save_book(&book, BOOK_PATH);
 }
