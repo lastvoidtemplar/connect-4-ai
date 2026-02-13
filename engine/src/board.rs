@@ -42,7 +42,7 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             current: 0,
             mask: 0,
@@ -50,21 +50,21 @@ impl Board {
         }
     }
 
-    pub fn can_play(&self, colm: usize) -> bool {
+    pub(crate) fn can_play(&self, colm: usize) -> bool {
         (self.mask & top_mask_colm(colm)) == 0
     }
 
-    pub fn play(&mut self, colm: usize) {
+    pub(crate) fn play(&mut self, colm: usize) {
         self.current = self.mask ^ self.current;
         self.mask = self.mask | (self.mask + bottom_mask_colm(colm));
         self.played_moves += 1;
     }
 
-    pub fn is_winning(&self, colm: usize) -> bool {
+    pub(crate) fn is_winning(&self, colm: usize) -> bool {
         (self.current_winning_moves() & self.possible() & column_mask(colm)) != 0
     }
 
-    pub fn played_moves(&self) -> usize {
+    pub(crate) fn played_moves(&self) -> usize {
         self.played_moves
     }
 
@@ -84,11 +84,11 @@ impl Board {
         compute_winning_position(self.current ^ self.mask, self.mask)
     }
 
-    pub fn can_win_next(&self) -> bool {
+    pub(crate) fn can_win_next(&self) -> bool {
         self.current_winning_moves() & self.possible() != 0
     }
 
-    pub fn possible_non_losing_moves(&self) -> u64{
+    pub(crate) fn possible_non_losing_moves(&self) -> u64{
         let mut possible = self.possible();
         let opponent_winning = self.opponent_winning_moves();
         // block or the opponent will win with next move
@@ -106,13 +106,13 @@ impl Board {
         possible & (!(opponent_winning >> 1))
     }
 
-    pub fn play_move(&mut self, mov: u64) {
+    pub(crate) fn play_move(&mut self, mov: u64) {
         self.current = self.mask ^ self.current;
         self.mask = self.mask | mov;
         self.played_moves+=1;
     }
 
-    pub fn score(&self, mov: u64) -> i32 {
+    pub(crate) fn score(&self, mov: u64) -> i32 {
         popcount(compute_winning_position(self.current | mov, self.mask))
     }
 }
@@ -125,7 +125,7 @@ fn bottom_mask_colm(colm: usize) -> u64 {
     1u64 << colm * (HEIGHT + 1)
 }
 
-pub fn column_mask(colm: usize) -> u64 {
+pub(crate) fn column_mask(colm: usize) -> u64 {
     ((1u64 << HEIGHT) - 1) << colm * (HEIGHT + 1)
 }
 

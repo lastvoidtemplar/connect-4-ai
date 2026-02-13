@@ -1,7 +1,8 @@
-mod board;
+pub mod board;
 pub mod engine;
-mod transposition_table;
 mod move_sorter;
+pub mod opening_book;
+mod transposition_table;
 
 use paste::paste;
 
@@ -236,8 +237,13 @@ fn test_empty_board() {
     let board = "".parse().unwrap();
     let score = engine.score(board);
 
-    assert_eq!(
-        score,
-        -19
-    );
+    assert_eq!(score, -19);
+}
+
+#[test]
+fn test_opening_book() {
+    let book = crate::opening_book::OpeningBook::open("../opening-book-8").unwrap();
+    let board = "12344321".parse().unwrap();
+    let score = book.score(&board);
+    assert_eq!(score, Some(6));
 }
