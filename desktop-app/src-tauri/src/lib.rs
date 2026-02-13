@@ -58,6 +58,14 @@ fn play_colm(colm: usize, state: AppState) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn back_move(state: AppState) {
+    let mut game = state.lock().unwrap();
+    if !game.encoded_board.is_empty() {
+        game.encoded_board.pop();
+    }
+}
+
+#[tauri::command]
 fn reset_game(state: AppState) {
     let mut game = state.lock().unwrap();
     game.engine.reset();
@@ -81,6 +89,7 @@ pub fn run() {
             get_encoded_board,
             open_book,
             play_colm,
+            back_move,
             reset_game,
             columns_score
         ])
